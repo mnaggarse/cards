@@ -1,5 +1,5 @@
 name: cards
-description: "A new Flutter project."
+description: "A minimal cards app with offline support."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -9,6 +9,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  sqflite: ^2.4.4
+  path: ^1.9.1
+  provider: ^6.1.5+1
 
 dev_dependencies:
   flutter_test:
@@ -17,3 +22,16 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/fonts/
+
+  fonts:
+    - family: IBMPlexSansArabic
+      fonts:
+        - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
+        - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
+          weight: 700
+    - family: UthmanTN
+      fonts:
+        - asset: assets/fonts/UthmanTN.ttf
