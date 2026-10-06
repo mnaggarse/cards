@@ -199,10 +199,7 @@ class _AddCardSheetState extends State<AddCardSheet> {
 
               // Sheet title
               Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
                 child: Row(
                   children: [
                     Text(
