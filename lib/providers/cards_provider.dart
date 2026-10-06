@@ -4,6 +4,8 @@ import '../models/card_model.dart';
 import '../models/category.dart';
 import '../models/tag.dart';
 
+enum CardSortOrder { date, alphabetical, length }
+
 class CardsProvider extends ChangeNotifier {
   final _db = DatabaseHelper.instance;
 
@@ -12,6 +14,37 @@ class CardsProvider extends ChangeNotifier {
   List<Tag> _allTags = [];
   String _searchQuery = '';
   Set<int> _selectedTagIds = {};
+  CardSortOrder _sortOrder = CardSortOrder.date;
+
+  // ─── Multi-selection ───────────────────────────────────────────────────────
+  Set<int> _selectedIds = {};
+  Set<int> get selectedIds => Set.unmodifiable(_selectedIds);
+  bool get selectionMode => _selectedIds.isNotEmpty;
+
+  void toggleSelection(int cardId) {
+    if (_selectedIds.contains(cardId)) {
+      _selectedIds.remove(cardId);
+    } else {
+      _selectedIds.add(cardId);
+    }
+    notifyListeners();
+  }
+
+  void clearSelection() {
+    _selectedIds = {};
+    notifyListeners();
+  }
+
+  Future<void> deleteSelectedCards() async {
+    final ids = List.of(_selectedIds);
+    for (final id in ids) {
+      await _db.deleteCard(id);
+    }
+    await _db.pruneOrphanTags();
+    await _db.pruneOrphanCategories();
+    _selectedIds = {};
+    await loadAll();
+  }
 
   // ─── Public getters ────────────────────────────────────────────────────────
 
@@ -27,6 +60,15 @@ class CardsProvider extends ChangeNotifier {
   bool get isFiltering => _selectedTagIds.isNotEmpty;
 
   bool get isSearching => _searchQuery.trim().isNotEmpty;
+
+  CardSortOrder get sortOrder => _sortOrder;
+
+  // ─── Sort ──────────────────────────────────────────────────────────────────
+
+  void setSortOrder(CardSortOrder order) {
+    _sortOrder = order;
+    notifyListeners();
+  }
 
   /// Returns cards for a given tab index (0 = All).
   List<CardModel> cardsForTab(int tabIndex) {
@@ -50,6 +92,16 @@ class CardsProvider extends ChangeNotifier {
     if (_searchQuery.trim().isNotEmpty) {
       final q = _searchQuery.trim().toLowerCase();
       cards = cards.where((c) => c.body.toLowerCase().contains(q)).toList();
+    }
+
+    // Apply sort
+    switch (_sortOrder) {
+      case CardSortOrder.date:
+        cards.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      case CardSortOrder.alphabetical:
+        cards.sort((a, b) => a.body.compareTo(b.body));
+      case CardSortOrder.length:
+        cards.sort((a, b) => a.body.length.compareTo(b.body.length));
     }
 
     return cards;
