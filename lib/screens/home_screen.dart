@@ -348,12 +348,31 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       ),
 
-      body: TabBarView(
-        controller: _tabController,
-        children: List.generate(
-          displayTabCount,
-          (i) => CardListView(tabIndex: i),
-        ),
+      body: Stack(
+        children: [
+          TabBarView(
+            controller: _tabController,
+            children: List.generate(
+              displayTabCount,
+              (i) => CardListView(tabIndex: i),
+            ),
+          ),
+          
+          // ── Floating selection action bar (slides up from bottom) ───────────
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: AnimatedSlide(
+              offset: inSelectionMode ? Offset.zero : const Offset(0, 1),
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              child: _SelectionBar(
+                count: selectedCount,
+                onCancel: provider.clearSelection,
+                onDelete: () => _confirmDeleteSelected(context, provider),
+              ),
+            ),
+          ),
+        ],
       ),
 
       // ── FAB always at same position, hidden during selection ────────────
@@ -369,15 +388,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           child: const Icon(Icons.add),
         ),
       ),
-
-      // ── Floating selection action bar (slides up from bottom) ───────────
-      bottomSheet: inSelectionMode
-          ? _SelectionBar(
-              count: selectedCount,
-              onCancel: provider.clearSelection,
-              onDelete: () => _confirmDeleteSelected(context, provider),
-            )
-          : null,
     );
   }
 }
@@ -397,67 +407,70 @@ class _SelectionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Colors.black.withAlpha(18))),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(20),
-              blurRadius: 12,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          children: [
-            // Cancel
-            IconButton(
-              icon: const Icon(Icons.close, size: 20),
-              color: Colors.black54,
-              tooltip: 'إلغاء التحديد',
-              onPressed: onCancel,
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.black.withAlpha(18))),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(20),
+            blurRadius: 12,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              // Cancel
+              IconButton(
+                icon: const Icon(Icons.close, size: 20),
+                color: Colors.black54,
+                tooltip: 'إلغاء التحديد',
+                onPressed: onCancel,
+              ),
 
-            const SizedBox(width: 8),
+              const SizedBox(width: 8),
 
-            // Count label
-            Expanded(
-              child: Text(
-                'تم تحديد $count بطاقة',
-                style: AppFonts.ibmStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
+              // Count label
+              Expanded(
+                child: Text(
+                  'تم تحديد $count بطاقة',
+                  style: AppFonts.ibmStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
                 ),
               ),
-            ),
 
-            // Delete button
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.red.shade600,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+              // Delete button
+              FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.red.shade600,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              ),
-              onPressed: count == 0 ? null : onDelete,
-              icon: const Icon(Icons.delete_outline, size: 18),
-              label: Text(
-                'حذف',
-                style: AppFonts.ibmStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                onPressed: count == 0 ? null : onDelete,
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: Text(
+                  'حذف',
+                  style: AppFonts.ibmStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
