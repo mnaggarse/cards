@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/card_model.dart';
-import '../models/tag.dart';
 import '../providers/cards_provider.dart';
 import '../theme/app_fonts.dart';
 
@@ -21,15 +20,8 @@ class _AddCardSheetState extends State<AddCardSheet> {
   final _tagInputController = TextEditingController();
   final _bodyFocusNode = FocusNode();
 
-
   List<String> _selectedTags = [];
   bool _saving = false;
-
-  // Autocomplete overlay
-  List<String> _categorySuggestions = [];
-  List<Tag> _tagSuggestions = [];
-  bool _showCategorySuggestions = false;
-  bool _showTagSuggestions = false;
 
   @override
   void initState() {
@@ -59,59 +51,15 @@ class _AddCardSheetState extends State<AddCardSheet> {
     super.dispose();
   }
 
-  void _onCategoryChanged(String value, CardsProvider provider) {
-    final q = value.trim().toLowerCase();
-    if (q.isEmpty) {
-      setState(() {
-        _categorySuggestions = [];
-        _showCategorySuggestions = false;
-      });
-      return;
-    }
-    final suggestions = provider.categories
-        .where((c) => c.name.toLowerCase().contains(q))
-        .map((c) => c.name)
-        .toList();
-    setState(() {
-      _categorySuggestions = suggestions;
-      _showCategorySuggestions = suggestions.isNotEmpty;
-    });
-  }
-
-  void _onTagInputChanged(String value, CardsProvider provider) {
-    final q = value.trim().toLowerCase();
-    if (q.isEmpty) {
-      setState(() {
-        _tagSuggestions = [];
-        _showTagSuggestions = false;
-      });
-      return;
-    }
-    final suggestions = provider.allTags
-        .where(
-          (t) =>
-              t.name.toLowerCase().contains(q) &&
-              !_selectedTags.contains(t.name),
-        )
-        .toList();
-    setState(() {
-      _tagSuggestions = suggestions;
-      _showTagSuggestions = true;
-    });
-  }
-
   void _addTag(String name) {
     final trimmed = name.trim();
     if (trimmed.isEmpty || _selectedTags.contains(trimmed)) {
       _tagInputController.clear();
-      setState(() => _showTagSuggestions = false);
       return;
     }
     setState(() {
       _selectedTags.add(trimmed);
       _tagInputController.clear();
-      _tagSuggestions = [];
-      _showTagSuggestions = false;
     });
   }
 
@@ -214,6 +162,11 @@ class _AddCardSheetState extends State<AddCardSheet> {
   Widget build(BuildContext context) {
     final provider = context.watch<CardsProvider>();
     final bodyFont = AppFonts.ibmStyle(fontSize: 15, height: 1.6);
+    final availableCategories = provider.categories.map((c) => c.name).toList();
+    final availableTags = provider.allTags
+        .where((t) => !_selectedTags.contains(t.name))
+        .map((t) => t.name)
+        .toList();
 
     return Padding(
       padding: EdgeInsets.only(
@@ -315,21 +268,62 @@ class _AddCardSheetState extends State<AddCardSheet> {
                       // Category field
                       _SectionLabel(label: 'التصنيف'),
                       const SizedBox(height: 8),
-                      _AutocompleteField(
-                        controller: _categoryController,
-                        hint: 'اختر تصنيفًا أو أنشئ جديدًا',
-                        suggestions: _categorySuggestions,
-                        showSuggestions: _showCategorySuggestions,
-                        onChanged: (v) => _onCategoryChanged(v, provider),
-                        onSuggestionTap: (s) {
-                          _categoryController.text = s;
-                          setState(() {
-                            _categorySuggestions = [];
-                            _showCategorySuggestions = false;
-                          });
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return DropdownMenu<String>(
+                            controller: _categoryController,
+                            width: constraints.maxWidth,
+                            enableFilter: true,
+                            requestFocusOnTap: true,
+                            hintText: 'اختر تصنيفًا أو أنشئ جديدًا',
+                            textStyle: AppFonts.ibmStyle(fontSize: 14),
+                            inputDecorationTheme: InputDecorationTheme(
+                              hintStyle: AppFonts.ibmStyle(color: Colors.black38),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 12,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: Colors.black12),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: Colors.black12),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: const BorderSide(color: Colors.black),
+                              ),
+                            ),
+                            menuStyle: MenuStyle(
+                              backgroundColor: const WidgetStatePropertyAll(Colors.white),
+                              surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+                              shape: WidgetStatePropertyAll(
+                                RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  side: const BorderSide(color: Colors.black12),
+                                ),
+                              ),
+                            ),
+                            dropdownMenuEntries: availableCategories
+                                .map(
+                                  (category) => DropdownMenuEntry<String>(
+                                    value: category,
+                                    label: category,
+                                    style: MenuItemButton.styleFrom(
+                                      textStyle: AppFonts.ibmStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onSelected: (val) {
+                              if (val != null) {
+                                _categoryController.text = val;
+                              }
+                            },
+                          );
                         },
-                        onDismiss: () =>
-                            setState(() => _showCategorySuggestions = false),
                       ),
 
                       const SizedBox(height: 20),
@@ -370,22 +364,79 @@ class _AddCardSheetState extends State<AddCardSheet> {
                         const SizedBox(height: 8),
                       ],
 
-                      _AutocompleteField(
-                        controller: _tagInputController,
-                        hint: 'ابحث عن وسم أو أضف جديدًا',
-                        suggestions: _tagSuggestions
-                            .map((t) => t.name)
-                            .toList(),
-                        showSuggestions: _showTagSuggestions,
-                        onChanged: (v) => _onTagInputChanged(v, provider),
-                        onSuggestionTap: (s) => _addTag(s),
-                        onDismiss: () =>
-                            setState(() => _showTagSuggestions = false),
-                        onSubmitted: (v) => _addTag(v),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.add, size: 20),
-                          onPressed: () => _addTag(_tagInputController.text),
-                        ),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: DropdownMenu<String>(
+                                  controller: _tagInputController,
+                                  width: constraints.maxWidth - 48,
+                                  enableFilter: true,
+                                  requestFocusOnTap: true,
+                                  hintText: 'ابحث عن وسم أو أضف جديدًا',
+                                  textStyle: AppFonts.ibmStyle(fontSize: 14),
+                                  inputDecorationTheme: InputDecorationTheme(
+                                    hintStyle: AppFonts.ibmStyle(color: Colors.black38),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(color: Colors.black12),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(color: Colors.black12),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                      borderSide: const BorderSide(color: Colors.black),
+                                    ),
+                                  ),
+                                  menuStyle: MenuStyle(
+                                    backgroundColor: const WidgetStatePropertyAll(Colors.white),
+                                    surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+                                    shape: WidgetStatePropertyAll(
+                                      RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                        side: const BorderSide(color: Colors.black12),
+                                      ),
+                                    ),
+                                  ),
+                                  dropdownMenuEntries: availableTags
+                                      .map(
+                                        (tag) => DropdownMenuEntry<String>(
+                                          value: tag,
+                                          label: tag,
+                                          style: MenuItemButton.styleFrom(
+                                            textStyle: AppFonts.ibmStyle(fontSize: 14),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onSelected: (val) {
+                                    if (val != null && val.isNotEmpty) {
+                                      _addTag(val);
+                                    }
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton.filled(
+                                style: IconButton.styleFrom(
+                                  backgroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                icon: const Icon(Icons.add, color: Colors.white, size: 20),
+                                onPressed: () => _addTag(_tagInputController.text),
+                              ),
+                            ],
+                          );
+                        },
                       ),
 
                       const SizedBox(height: 32),
@@ -448,103 +499,4 @@ class _SectionLabel extends StatelessWidget {
       color: Colors.black54,
     ),
   );
-}
-
-class _AutocompleteField extends StatelessWidget {
-  final TextEditingController controller;
-  final String hint;
-  final List<String> suggestions;
-  final bool showSuggestions;
-  final ValueChanged<String> onChanged;
-  final ValueChanged<String> onSuggestionTap;
-  final VoidCallback onDismiss;
-  final ValueChanged<String>? onSubmitted;
-  final Widget? suffixIcon;
-
-  const _AutocompleteField({
-    required this.controller,
-    required this.hint,
-    required this.suggestions,
-    required this.showSuggestions,
-    required this.onChanged,
-    required this.onSuggestionTap,
-    required this.onDismiss,
-    this.onSubmitted,
-    this.suffixIcon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        TextField(
-          controller: controller,
-          textDirection: TextDirection.rtl,
-          style: AppFonts.ibmStyle(fontSize: 14),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: AppFonts.ibmStyle(color: Colors.black38),
-            suffixIcon: suffixIcon,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.black12),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.black12),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Colors.black),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
-          ),
-          onChanged: onChanged,
-          onSubmitted: onSubmitted,
-        ),
-        if (showSuggestions && suggestions.isNotEmpty)
-          Container(
-            margin: const EdgeInsets.only(top: 2),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.black12),
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withAlpha(15),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Column(
-              children: suggestions
-                  .map(
-                    (s) => InkWell(
-                      onTap: () => onSuggestionTap(s),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 10,
-                        ),
-                        child: Align(
-                          alignment: AlignmentDirectional.centerStart,
-                          child: Text(
-                            s,
-                            style: AppFonts.ibmStyle(fontSize: 14),
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ),
-      ],
-    );
-  }
 }
