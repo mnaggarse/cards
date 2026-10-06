@@ -1,6 +1,6 @@
 import 'tag.dart';
 
-enum CardType { normal, quran }
+enum CardType { normal }
 
 class CardModel {
   final int? id;
@@ -23,7 +23,7 @@ class CardModel {
       CardModel(
         id: map['id'] as int?,
         body: map['body'] as String,
-        type: map['type'] == 'quran' ? CardType.quran : CardType.normal,
+        type: CardType.normal,
         categoryId: map['category_id'] as int?,
         tags: tags,
         createdAt: DateTime.fromMillisecondsSinceEpoch(map['created_at'] as int),

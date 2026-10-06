@@ -21,7 +21,7 @@ class _AddCardSheetState extends State<AddCardSheet> {
   final _tagInputController = TextEditingController();
   final _bodyFocusNode = FocusNode();
 
-  CardType _cardType = CardType.normal;
+
   List<String> _selectedTags = [];
   bool _saving = false;
 
@@ -37,7 +37,6 @@ class _AddCardSheetState extends State<AddCardSheet> {
     final existing = widget.existing;
     if (existing != null) {
       _bodyController.text = existing.body;
-      _cardType = existing.type;
       _selectedTags = existing.tags.map((t) => t.name).toList();
 
       // Find category name
@@ -153,7 +152,7 @@ class _AddCardSheetState extends State<AddCardSheet> {
             ),
           ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.black),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade600),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: Text(
               'حذف',
@@ -194,7 +193,7 @@ class _AddCardSheetState extends State<AddCardSheet> {
     if (widget.existing == null) {
       await provider.addCard(
         body: body,
-        type: _cardType,
+        type: CardType.normal,
         categoryName: categoryName,
         tagNames: _selectedTags,
       );
@@ -202,7 +201,7 @@ class _AddCardSheetState extends State<AddCardSheet> {
       await provider.updateCard(
         id: widget.existing!.id!,
         body: body,
-        type: _cardType,
+        type: CardType.normal,
         categoryName: categoryName,
         tagNames: _selectedTags,
       );
@@ -214,9 +213,7 @@ class _AddCardSheetState extends State<AddCardSheet> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<CardsProvider>();
-    final bodyFont = _cardType == CardType.quran
-        ? AppFonts.quranStyle(fontSize: 19, height: 1.6)
-        : AppFonts.ibmStyle(fontSize: 15, height: 1.6);
+    final bodyFont = AppFonts.ibmStyle(fontSize: 15, height: 1.6);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -282,43 +279,6 @@ class _AddCardSheetState extends State<AddCardSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // Card type selector
-                      _SectionLabel(label: 'نوع البطاقة'),
-                      const SizedBox(height: 8),
-                      SegmentedButton<CardType>(
-                        style: SegmentedButton.styleFrom(
-                          selectedBackgroundColor: Colors.black,
-                          selectedForegroundColor: Colors.white,
-                          foregroundColor: Colors.black,
-                          side: const BorderSide(color: Colors.black26),
-                        ),
-                        segments: [
-                          ButtonSegment(
-                            value: CardType.normal,
-                            label: Text(
-                              'نص عادي',
-                              style: AppFonts.ibmStyle(
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                          ButtonSegment(
-                            value: CardType.quran,
-                            label: Text(
-                              'نص مقدس',
-                              style: AppFonts.ibmStyle(
-                                fontSize: 13,
-                              ),
-                            ),
-                          ),
-                        ],
-                        selected: {_cardType},
-                        onSelectionChanged: (val) =>
-                            setState(() => _cardType = val.first),
-                      ),
-
-                      const SizedBox(height: 20),
-
                       // Body field
                       _SectionLabel(label: 'نص البطاقة'),
                       const SizedBox(height: 8),
@@ -330,9 +290,7 @@ class _AddCardSheetState extends State<AddCardSheet> {
                         textDirection: TextDirection.rtl,
                         style: bodyFont,
                         decoration: InputDecoration(
-                          hintText: _cardType == CardType.quran
-                              ? 'اكتب الآية هنا...'
-                              : 'اكتب نص البطاقة...',
+                          hintText: 'اكتب نص البطاقة...',
                           hintStyle: AppFonts.ibmStyle(
                             color: Colors.black38,
                           ),

@@ -1,6 +1,6 @@
 name: cards
 description: "A minimal cards app with offline support."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0+1
 
 environment:
@@ -19,6 +19,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -32,6 +33,11 @@ flutter:
         - asset: assets/fonts/IBMPlexSansArabic-Regular.ttf
         - asset: assets/fonts/IBMPlexSansArabic-Bold.ttf
           weight: 700
-    - family: UthmanTN
-      fonts:
-        - asset: assets/fonts/UthmanTN.ttf
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  min_sdk_android: 21
+  image_path: "assets/icons/icon.png"
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/icons/icon.png"
